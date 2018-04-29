@@ -4,11 +4,10 @@
 from __future__ import unicode_literals
 import frappe
 from frappe.desk.notifications import clear_notifications
+from frappe.cache_manager import clear_defaults_cache, common_default_keys
 
 # Note: DefaultValue records are identified by parenttype
 # __default, __global or 'User Permission'
-
-common_keys = ["__default", "__global"]
 
 def set_user_default(key, value, user=None, parenttype=None):
 	set_default(key, value, user or frappe.session.user, parenttype)
@@ -92,7 +91,19 @@ def set_default(key, value, parent, parenttype="__default"):
 	:param value: Default value.
 	:param parent: Usually, **User** to whom the default belongs.
 	:param parenttype: [optional] default is `__default`."""
-	frappe.db.sql("""delete from `tabDefaultValue` where defkey=%s and parent=%s""", (key, parent))
+	if frappe.db.sql('''
+		select
+			defkey
+		from
+			tabDefaultValue
+		where
+			defkey=%s and parent=%s
+		for update''', (key, parent)):
+		frappe.db.sql("""
+			delete from
+				`tabDefaultValue`
+			where
+				defkey=%s and parent=%s""", (key, parent))
 	if value != None:
 		add_default(key, value, parent)
 
@@ -142,10 +153,10 @@ def clear_default(key=None, value=None, parent=None, name=None, parenttype=None)
 			values.append(parenttype)
 
 	if parent:
-		clear_cache(parent)
+		clear_defaults_cache(parent)
 	else:
-		clear_cache("__default")
-		clear_cache("__global")
+		clear_defaults_cache("__default")
+		clear_defaults_cache("__global")
 
 	if not conditions:
 		raise Exception("[clear_default] No key specified.")
@@ -182,15 +193,8 @@ def get_defaults_for(parent="__default"):
 	return defaults
 
 def _clear_cache(parent):
-	if parent in common_keys:
+	if parent in common_default_keys:
 		frappe.clear_cache()
 	else:
 		clear_notifications(user=parent)
 		frappe.clear_cache(user=parent)
-
-def clear_cache(user=None):
-	if user:
-		for p in ([user] + common_keys):
-			frappe.cache().hdel("defaults", p)
-	elif frappe.flags.in_install!="frappe":
-		frappe.cache().delete_key("defaults")

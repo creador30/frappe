@@ -3,7 +3,6 @@ frappe.provide("frappe.ui.notifications");
 frappe.ui.notifications = {
 	config: {
 		"ToDo": { label: __("To Do") },
-		"Chat": { label: __("Chat"), route: "chat"},
 		"Event": { label: __("Calendar"), route: "List/Event/Calendar" },
 		"Email": { label: __("Email"), route: "List/Communication/Inbox" },
 		"Likes": { label: __("Likes"),
@@ -43,7 +42,7 @@ frappe.ui.notifications = {
 
 		// switch colour on the navbar and disable if no notifications
 		$(".navbar-new-comments")
-			.html(this.total > 20 ? '20+' : this.total)
+			.html(this.total > 99 ? '99+' : this.total)
 			.toggleClass("navbar-new-comments-true", this.total ? true : false)
 			.parent().toggleClass("disabled", this.total ? false : true);
 	},
@@ -66,11 +65,12 @@ frappe.ui.notifications = {
 
 	add_notification: function(name, value, doc_dt, target = false) {
 		let label = this.config[name] ? this.config[name].label : name;
+		let title = target ? `title="Your Target"` : '';
 		let $list_item = !target
-			? $(`<li><a class="badge-hover" data-doctype="${name}">${__(label)}
+			? $(`<li><a class="badge-hover" data-doctype="${name}" ${title}>${__(label)}
 				<span class="badge pull-right">${value}</span>
 			</a></li>`)
-			: $(`<li><a class="progress-small" data-doctype="${doc_dt}"
+			: $(`<li><a class="progress-small" ${title} data-doctype="${doc_dt}"
 				data-doc="${name}"><span class="dropdown-item-label">${__(label)}<span>
 				<div class="progress-chart"><div class="progress">
 					<div class="progress-bar" style="width: ${value}%"></div>
@@ -108,11 +108,6 @@ frappe.ui.notifications = {
 			}
 			$.extend(frappe.route_options, filters);
 		}
-		let route = frappe.get_route();
-		if(route[0]==="List" && route[1]===doctype) {
-			frappe.pages["List/" + doctype].list_view.refresh();
-		} else {
-			frappe.set_route("List", doctype);
-		}
+		frappe.set_route("List", doctype);
 	},
-}
+};

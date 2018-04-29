@@ -26,7 +26,7 @@ frappe.confirm = function(message, ifyes, ifno) {
 	var d = new frappe.ui.Dialog({
 		title: __("Confirm"),
 		fields: [
-			{fieldtype:"HTML", options:"<p class='frappe-confirm-message'>" + message + "</p>"}
+			{fieldtype:"HTML", options:`<p class="frappe-confirm-message">${message}</p>`}
 		],
 		primary_action_label: __("Yes"),
 		primary_action: function() {
@@ -235,18 +235,18 @@ frappe.verify_password = function(callback) {
 }
 
 frappe.show_progress = function(title, count, total=100, description) {
-	if(frappe.cur_progress && frappe.cur_progress.title === title
-			&& frappe.cur_progress.$wrapper.is(":visible")) {
+	if(frappe.cur_progress && frappe.cur_progress.title === title && frappe.cur_progress.is_visible) {
 		var dialog = frappe.cur_progress;
 	} else {
 		var dialog = new frappe.ui.Dialog({
 			title: title,
 		});
-		dialog.progress = $(`<div class="progress">
-			<div class="progress-bar"></div>
+		dialog.progress = $(`<div>
+			<div class="progress">
+				<div class="progress-bar"></div>
+			</div>
 			<p class="description text-muted small"></p>
-		</div>`)
-			.appendTo(dialog.body);
+		</div`).appendTo(dialog.body);
 		dialog.progress_bar = dialog.progress.css({"margin-top": "10px"})
 			.find(".progress-bar");
 		dialog.$wrapper.removeClass("fade");
@@ -273,32 +273,40 @@ frappe.show_alert = function(message, seconds=7) {
 	if(typeof message==='string') {
 		message = {
 			message: message
-		}
+		};
 	}
 	if(!$('#dialog-container').length) {
 		$('<div id="dialog-container"><div id="alert-container"></div></div>').appendTo('body');
 	}
 
-	var message_html;
-	if(message.indicator) {
-		message_html = $('<span class="indicator ' + message.indicator + '"></span>').append(message.message);
-	} else {
-		message_html = message.message;
+	let body_html;
+
+	if (message.body) {
+		body_html = message.body;
 	}
 
-	var div = $(`
+	const div = $(`
 		<div class="alert desk-alert">
-			<span class="alert-message"></span><a class="close">&times;</a>
+			<div class="alert-message"></div>
+			<div class="alert-body" style="display: none"></div>
+			<a class="close">&times;</a>
 		</div>`);
 
-	div.find('.alert-message').append(message_html);
+	div.find('.alert-message').append(message.message);
 
-	div.hide()
-		.appendTo("#alert-container")
-		.fadeIn(300);
+	if(message.indicator) {
+		div.find('.alert-message').addClass('indicator '+ message.indicator);
+	}
 
-	div.find('.close').click(function() {
-		$(this).parent().remove();
+	if (body_html) {
+		div.find('.alert-body').show().html(body_html);
+	}
+
+	div.hide().appendTo("#alert-container").show()
+		.css('transform', 'translateX(0)');
+
+	div.find('.close, button').click(function() {
+		div.remove();
 		return false;
 	});
 

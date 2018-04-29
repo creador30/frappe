@@ -11,7 +11,7 @@ app_color = "orange"
 source_link = "https://github.com/frappe/frappe"
 app_license = "MIT"
 
-develop_version = '8.x.x-beta'
+develop_version = '11.x.x-develop'
 
 app_email = "info@frappe.io"
 
@@ -30,7 +30,6 @@ app_include_js = [
 	"assets/js/form.min.js",
 	"assets/js/control.min.js",
 	"assets/js/report.min.js",
-	"assets/js/d3.min.js",
 	"assets/frappe/js/frappe/toolbar.js"
 ]
 app_include_css = [
@@ -64,12 +63,14 @@ before_tests = "frappe.utils.install.before_tests"
 
 email_append_to = ["Event", "ToDo", "Communication"]
 
+get_rooms = 'frappe.chat.doctype.chat_room.chat_room.get_rooms'
+
 calendars = ["Event"]
 
 # login
 
 on_session_creation = [
-	"frappe.core.doctype.communication.feed.login_feed",
+	"frappe.core.doctype.activity_log.feed.login_feed",
 	"frappe.core.doctype.user.user.notify_admin_access_to_system_manager",
 	"frappe.limits.check_if_expired",
 	"frappe.utils.scheduler.reset_enabled_scheduler_events",
@@ -111,7 +112,7 @@ doc_events = {
 	"*": {
 		"on_update": [
 			"frappe.desk.notifications.clear_doctype_notifications",
-			"frappe.core.doctype.communication.feed.update_feed"
+			"frappe.core.doctype.activity_log.feed.update_feed"
 		],
 		"after_rename": "frappe.desk.notifications.clear_doctype_notifications",
 		"on_cancel": [
@@ -133,7 +134,8 @@ scheduler_events = {
 		"frappe.email.doctype.email_account.email_account.notify_unreplied",
 		"frappe.oauth.delete_oauth2_data",
 		"frappe.integrations.doctype.razorpay_settings.razorpay_settings.capture_payment",
-		"frappe.twofactor.delete_all_barcodes_for_users"
+		"frappe.twofactor.delete_all_barcodes_for_users",
+		"frappe.integrations.doctype.gcalendar_settings.gcalendar_settings.sync"
 	],
 	"hourly": [
 		"frappe.model.utils.link_count.update_link_count",
@@ -154,18 +156,22 @@ scheduler_events = {
 		"frappe.utils.scheduler.restrict_scheduler_events_if_dormant",
 		"frappe.email.doctype.auto_email_report.auto_email_report.send_daily",
 		"frappe.core.doctype.feedback_request.feedback_request.delete_feedback_request",
-		"frappe.core.doctype.authentication_log.authentication_log.clear_authentication_logs"
+		"frappe.core.doctype.activity_log.activity_log.clear_authentication_logs"
 	],
 	"daily_long": [
-		"frappe.integrations.doctype.dropbox_settings.dropbox_settings.take_backups_daily"
+		"frappe.integrations.doctype.dropbox_settings.dropbox_settings.take_backups_daily",
+		"frappe.integrations.doctype.s3_backup_settings.s3_backup_settings.take_backups_daily"
 	],
 	"weekly_long": [
-		"frappe.integrations.doctype.dropbox_settings.dropbox_settings.take_backups_weekly"
+		"frappe.integrations.doctype.dropbox_settings.dropbox_settings.take_backups_weekly",
+		"frappe.integrations.doctype.s3_backup_settings.s3_backup_settings.take_backups_weekly"
 	],
 	"monthly": [
 		"frappe.email.doctype.auto_email_report.auto_email_report.send_monthly"
+	],
+	"monthly_long": [
+		"frappe.integrations.doctype.s3_backup_settings.s3_backup_settings.take_backups_monthly"
 	]
-
 }
 
 get_translated_dict = {
@@ -180,8 +186,13 @@ sounds = [
 	{"name": "delete", "src": "/assets/frappe/sounds/delete.mp3", "volume": 0.05},
 	{"name": "click", "src": "/assets/frappe/sounds/click.mp3", "volume": 0.05},
 	{"name": "error", "src": "/assets/frappe/sounds/error.mp3", "volume": 0.1},
-	# {"name": "alert", "src": "/assets/frappe/sounds/alert.mp3"},
+	{"name": "alert", "src": "/assets/frappe/sounds/alert.mp3", "volume": 0.2},
 	# {"name": "chime", "src": "/assets/frappe/sounds/chime.mp3"},
+
+	# frappe.chat sounds
+	{ "name": "chat-message", 	   "src": "/assets/frappe/sounds/chat-message.mp3",      "volume": 0.1 },
+	{ "name": "chat-notification", "src": "/assets/frappe/sounds/chat-notification.mp3", "volume": 0.1 }
+	# frappe.chat sounds
 ]
 
 bot_parsers = [

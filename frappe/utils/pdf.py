@@ -29,8 +29,11 @@ def get_pdf(html, options=None, output = None):
 
 			# allow pdfs with missing images if file got created
 			if os.path.exists(fname):
-				with open(fname, "rb") as fileobj:
-					filedata = fileobj.read()
+				if output:
+					append_pdf(PdfFileReader(file(fname,"rb")),output)
+				else:
+					with open(fname, "rb") as fileobj:
+						filedata = fileobj.read()
 
 			else:
 				frappe.throw(_("PDF generation failed because of broken image links"))
@@ -64,7 +67,7 @@ def prepare_options(html, options):
 
 		# defaults
 		'margin-right': '15mm',
-		'margin-left': '15mm',
+		'margin-left': '15mm'
 	})
 
 	html, html_options = read_options_from_html(html)
@@ -84,6 +87,10 @@ def read_options_from_html(html):
 	options = {}
 	soup = BeautifulSoup(html, "html5lib")
 
+	options.update(prepare_header_footer(soup))
+
+	toggle_visible_pdf(soup)
+
 	# extract pdfkit options from html
 	for html_id in ("margin-top", "margin-bottom", "margin-left", "margin-right", "page-size"):
 		try:
@@ -92,10 +99,6 @@ def read_options_from_html(html):
 				options[html_id] = tag.contents
 		except:
 			pass
-
-	options.update(prepare_header_footer(soup))
-
-	toggle_visible_pdf(soup)
 
 	return soup.prettify(), options
 
@@ -128,16 +131,14 @@ def prepare_header_footer(soup):
 
 			# create temp file
 			fname = os.path.join("/tmp", "frappe-pdf-{0}.html".format(frappe.generate_hash()))
-			with open(fname, "w") as f:
+			with open(fname, "wb") as f:
 				f.write(html.encode("utf-8"))
 
 			# {"header-html": "/tmp/frappe-pdf-random.html"}
 			options[html_id] = fname
-
 		else:
 			if html_id == "header-html":
 				options["margin-top"] = "15mm"
-
 			elif html_id == "footer-html":
 				options["margin-bottom"] = "15mm"
 

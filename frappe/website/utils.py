@@ -2,8 +2,10 @@
 # MIT License. See license.txt
 
 from __future__ import unicode_literals
+import functools
 import frappe, re, os
 from six import iteritems
+from past.builtins import cmp
 
 def delete_page_cache(path):
 	cache = frappe.cache()
@@ -19,7 +21,7 @@ def delete_page_cache(path):
 def find_first_image(html):
 	m = re.finditer("""<img[^>]*src\s?=\s?['"]([^'"]*)['"]""", html)
 	try:
-		return m.next().groups()[0]
+		return next(m).groups()[0]
 	except StopIteration:
 		return None
 
@@ -257,8 +259,8 @@ def get_full_index(route=None, app=None):
 								added.append(child_route)
 
 					# add remaining pages not in index.txt
-					_children = sorted(children, lambda a, b: cmp(
-						os.path.basename(a.route), os.path.basename(b.route)))
+					_children = sorted(children, key = functools.cmp_to_key(lambda a, b: cmp(
+						os.path.basename(a.route), os.path.basename(b.route))))
 
 					for child_route in _children:
 						if child_route not in new_children:

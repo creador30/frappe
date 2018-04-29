@@ -10,7 +10,7 @@ Example:
 
 	meta = frappe.get_meta('User')
 	if meta.has_field('first_name'):
-		print "DocType" table has field "first_name"
+		print("DocType" table has field "first_name")
 
 
 '''
@@ -24,6 +24,7 @@ from frappe.model.document import Document
 from frappe.model.base_document import BaseDocument
 from frappe.model.db_schema import type_map
 from frappe.modules import load_doctype_module
+from frappe.model.workflow import get_workflow_name
 from frappe import _
 
 def get_meta(doctype, cached=True):
@@ -33,7 +34,10 @@ def get_meta(doctype, cached=True):
 				lambda: Meta(doctype))
 		return frappe.local.meta_cache[doctype]
 	else:
-		return Meta(doctype)
+		return load_meta(doctype)
+
+def load_meta(doctype):
+	return Meta(doctype)
 
 def get_table_columns(doctype):
 	return frappe.cache().hget("table_columns", doctype,
@@ -89,6 +93,15 @@ class Meta(Document):
 	def get_select_fields(self):
 		return self.get("fields", {"fieldtype": "Select", "options":["not in",
 			["[Select]", "Loading..."]]})
+
+	def get_image_fields(self):
+		return self.get("fields", {"fieldtype": "Attach Image"})
+
+	def get_set_only_once_fields(self):
+		'''Return fields with `set_only_once` set'''
+		if not hasattr(self, "_set_only_once_fields"):
+			self._set_only_once_fields = self.get("fields", {"set_only_once": 1})
+		return self._set_only_once_fields
 
 	def get_table_fields(self):
 		if not hasattr(self, "_table_fields"):
@@ -212,10 +225,22 @@ class Meta(Document):
 		title_field = getattr(self, 'title_field', None)
 		if not title_field and self.has_field('title'):
 			title_field = 'title'
-		else:
+		if not title_field:
 			title_field = 'name'
 
 		return title_field
+
+	def get_translatable_fields(self):
+		'''Return all fields that are translation enabled'''
+		return [d.fieldname for d in self.fields if d.translatable]
+
+	def is_translatable(self, fieldname):
+		'''Return true of false given a field'''
+		field = self.get_field(fieldname)
+		return field and field.translatable
+
+	def get_workflow(self):
+		return get_workflow_name(self.name)
 
 	def process(self):
 		# don't process for special doctypes
@@ -378,6 +403,9 @@ class Meta(Document):
 				module_name = module_name, doctype_name = doctype, suffix=suffix)
 		return None
 
+	def is_nested_set(self):
+		return self.has_field('lft') and self.has_field('rgt')
+
 doctype_table_fields = [
 	frappe._dict({"fieldname": "fields", "options": "DocField"}),
 	frappe._dict({"fieldname": "permissions", "options": "DocPerm"})
@@ -477,7 +505,7 @@ def trim_tables(doctype=None):
 	if doctype:
 		filters["name"] = doctype
 
-	for doctype in frappe.db.get_all("DocType", filters={"issingle": 0}):
+	for doctype in frappe.db.get_all("DocType", filters=filters):
 		doctype = doctype.name
 		columns = frappe.db.get_table_columns(doctype)
 		fields = frappe.get_meta(doctype).get_fieldnames_with_value()
@@ -489,36 +517,3 @@ def trim_tables(doctype=None):
 			query = """alter table `tab{doctype}` {columns}""".format(
 				doctype=doctype, columns=columns_to_remove)
 			frappe.db.sql_ddl(query)
-
-def clear_cache(doctype=None):
-	cache = frappe.cache()
-
-	if getattr(frappe.local, 'meta_cache') and (doctype in frappe.local.meta_cache):
-		del frappe.local.meta_cache[doctype]
-
-	for key in ('is_table', 'doctype_modules'):
-		cache.delete_value(key)
-
-	groups = ["meta", "form_meta", "table_columns", "last_modified",
-		"linked_doctypes", 'email_alerts']
-
-	def clear_single(dt):
-		for name in groups:
-			cache.hdel(name, dt)
-
-	if doctype:
-		clear_single(doctype)
-
-		# clear all parent doctypes
-		for dt in frappe.db.sql("""select parent from tabDocField
-			where fieldtype="Table" and options=%s""", (doctype,)):
-			clear_single(dt[0])
-
-		# clear all notifications
-		from frappe.desk.notifications import delete_notification_count_for
-		delete_notification_count_for(doctype)
-
-	else:
-		# clear all
-		for name in groups:
-			cache.delete_value(name)

@@ -14,6 +14,7 @@ from num2words import num2words
 from six.moves import html_parser as HTMLParser
 from six.moves.urllib.parse import quote, urljoin
 from html2text import html2text
+from markdown2 import markdown, MarkdownError
 from six import iteritems, text_type, string_types, integer_types
 
 DATE_FORMAT = "%Y-%m-%d"
@@ -25,9 +26,9 @@ def getdate(string_date=None):
 	"""
 		 Coverts string date (yyyy-mm-dd) to datetime.date object
 	"""
+
 	if not string_date:
 		return get_datetime().date()
-
 	if isinstance(string_date, datetime.datetime):
 		return string_date.date()
 
@@ -37,7 +38,6 @@ def getdate(string_date=None):
 	# dateutil parser does not agree with dates like 0000-00-00
 	if not string_date or string_date=="0000-00-00":
 		return None
-
 	return parser.parse(string_date).date()
 
 def get_datetime(datetime_str=None):
@@ -198,7 +198,6 @@ def get_time(time_str):
 def get_datetime_str(datetime_obj):
 	if isinstance(datetime_obj, string_types):
 		datetime_obj = get_datetime(datetime_obj)
-
 	return datetime_obj.strftime(DATETIME_FORMAT)
 
 def get_user_format():
@@ -218,14 +217,18 @@ def formatdate(string_date=None, format_string=None):
 		 * mm-dd-yyyy
 		 * dd/mm/yyyy
 	"""
-	date = getdate(string_date) if string_date else now_datetime().date()
+
+	if not string_date:
+		return ''
+
+	date = getdate(string_date)
 	if not format_string:
 		format_string = get_user_format().replace("mm", "MM")
-
 	try:
 		formatted_date = babel.dates.format_date(date, format_string, locale=(frappe.local.lang or "").replace("-", "_"))
 	except UnknownLocaleError:
-		formatted_date = date.strftime("%Y-%m-%d")
+		format_string = format_string.replace("MM", "%m").replace("dd", "%d").replace("yyyy", "%Y")
+		formatted_date = date.strftime(format_string)
 	return formatted_date
 
 def format_time(txt):
@@ -249,10 +252,10 @@ def format_datetime(datetime_string, format_string=None):
 		formatted_datetime = datetime.strftime('%Y-%m-%d %H:%M:%S')
 	return formatted_datetime
 
-def global_date_format(date):
+def global_date_format(date, format="long"):
 	"""returns localized date in the form of January 1, 2012"""
 	date = getdate(date)
-	formatted_date = babel.dates.format_date(date, locale=(frappe.local.lang or "en").replace("-", "_"), format="long")
+	formatted_date = babel.dates.format_date(date, locale=(frappe.local.lang or "en").replace("-", "_"), format=format)
 	return formatted_date
 
 def has_common(l1, l2):
@@ -366,16 +369,27 @@ def fmt_money(amount, precision=None, currency=None):
 	# 40,000 -> 40,000.00
 	# 40,000.00000 -> 40,000.00
 	# 40,000.23000 -> 40,000.23
+
+	if isinstance(amount, string_types):
+		amount = flt(amount, precision)
+
 	if decimal_str:
-		parts = str(amount).split(decimal_str)
-		decimals = parts[1] if len(parts) > 1 else ''
+		decimals_after = str(round(amount % 1, precision))
+		parts = decimals_after.split('.')
+		parts = parts[1] if len(parts) > 1 else parts[0]
+		decimals = parts
 		if precision > 2:
 			if len(decimals) < 3:
-				precision = 2
+				if currency:
+					fraction  = frappe.db.get_value("Currency", currency, "fraction_units") or 100
+					precision = len(cstr(fraction)) - 1
+				else:
+					precision = number_format_precision
 			elif len(decimals) < precision:
 				precision = len(decimals)
 
-	amount = '%.*f' % (precision, flt(amount))
+	amount = '%.*f' % (precision, round(flt(amount), precision))
+
 	if amount.find('.') == -1:
 		decimals = ''
 	else:
@@ -403,7 +417,8 @@ def fmt_money(amount, precision=None, currency=None):
 	parts.reverse()
 
 	amount = comma_str.join(parts) + ((precision and decimal_str) and (decimal_str + decimals) or "")
-	amount = minus + amount
+	if amount != '0':
+		amount = minus + amount
 
 	if currency and frappe.defaults.get_global_default("hide_currency_symbol") != "Yes":
 		symbol = frappe.db.get_value("Currency", currency, "symbol") or currency
@@ -505,6 +520,13 @@ def is_html(text):
 			out = True
 			break
 	return out
+
+def is_image(filepath):
+	from mimetypes import guess_type
+
+	# filepath can be https://example.com/bed.jpg?v=129
+	filepath = filepath.split('?')[0]
+	return (guess_type(filepath)[0] or "").startswith("image/")
 
 
 # from Jinja2 code
@@ -734,7 +756,7 @@ def get_filter(doctype, f):
 	from frappe.model import default_fields, optional_fields
 
 	if isinstance(f, dict):
-		key, value = f.items()[0]
+		key, value = next(iter(f.items()))
 		f = make_filter_tuple(doctype, key, value)
 
 	if not isinstance(f, (list, tuple)):
@@ -777,6 +799,16 @@ def make_filter_tuple(doctype, key, value):
 	else:
 		return [doctype, key, "=", value]
 
+def make_filter_dict(filters):
+	'''convert this [[doctype, key, operator, value], ..]
+	to this { key: (operator, value), .. }
+	'''
+	_filter = frappe._dict()
+	for f in filters:
+		_filter[f[1]] = (f[2], f[3])
+
+	return _filter
+
 def scrub_urls(html):
 	html = expand_relative_urls(html)
 	# encoding should be responsibility of the composer
@@ -791,7 +823,7 @@ def expand_relative_urls(html):
 	def _expand_relative_urls(match):
 		to_expand = list(match.groups())
 
-		if not to_expand[2].startswith('mailto'):
+		if not to_expand[2].startswith('mailto') and not to_expand[2].startswith('data:'):
 			if not to_expand[2].startswith("/"):
 				to_expand[2] = "/" + to_expand[2]
 			to_expand.insert(2, url)
@@ -840,3 +872,19 @@ def to_markdown(html):
 		pass
 
 	return text
+
+def to_html(markdown_text):
+	html = None
+	try:
+		html = markdown(markdown_text)
+	except MarkdownError:
+		pass
+
+	return html
+
+def get_source_value(source, key):
+	'''Get value from source (object or dict) based on key'''
+	if isinstance(source, dict):
+		return source.get(key)
+	else:
+		return getattr(source, key)

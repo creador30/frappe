@@ -40,7 +40,8 @@
    "reqd": 0, 
    "search_index": 0, 
    "set_only_once": 0, 
-   "unique": 0
+   "unique": 0,
+   "translatable": 0
   }, 
   {
    "allow_bulk_edit": 0, 
@@ -73,7 +74,8 @@
    "search_index": 1, 
    "set_only_once": 0, 
    "unique": 0, 
-   "width": "163"
+   "width": "163",
+   "translatable": 0
   }, 
   {
    "allow_bulk_edit": 0, 
@@ -96,7 +98,7 @@
    "no_copy": 0, 
    "oldfieldname": "fieldtype", 
    "oldfieldtype": "Select", 
-   "options": "Attach\nAttach Image\nButton\nCheck\nCode\nColor\nColumn Break\nCurrency\nData\nDate\nDatetime\nDynamic Link\nFloat\nFold\nHeading\nHTML\nImage\nInt\nLink\nLong Text\nPassword\nPercent\nRead Only\nSection Break\nSelect\nSmall Text\nTable\nText\nText Editor\nTime\nSignature", 
+   "options": "Attach\nAttach Image\nBarcode\nButton\nCheck\nCode\nColor\nColumn Break\nCurrency\nData\nDate\nDatetime\nDynamic Link\nFloat\nFold\nGeolocation\nHeading\nHTML\nImage\nInt\nLink\nLong Text\nPassword\nPercent\nRead Only\nSection Break\nSelect\nSmall Text\nTable\nText\nText Editor\nTime\nSignature", 
    "permlevel": 0, 
    "print_hide": 0, 
    "print_hide_if_no_value": 0, 
@@ -106,7 +108,8 @@
    "reqd": 1, 
    "search_index": 1, 
    "set_only_once": 0, 
-   "unique": 0
+   "unique": 0,
+   "translatable": 0
   }, 
   {
    "allow_bulk_edit": 0, 
@@ -137,7 +140,8 @@
    "reqd": 0, 
    "search_index": 1, 
    "set_only_once": 0, 
-   "unique": 0
+   "unique": 0,
+   "translatable": 0
   }, 
   {
    "allow_bulk_edit": 0, 
@@ -170,7 +174,8 @@
    "search_index": 0, 
    "set_only_once": 0, 
    "unique": 0, 
-   "width": "50px"
+   "width": "50px",
+   "translatable": 0
   }, 
   {
    "allow_bulk_edit": 0, 
@@ -202,7 +207,8 @@
    "reqd": 0, 
    "search_index": 0, 
    "set_only_once": 0, 
-   "unique": 0
+   "unique": 0,
+   "translatable": 0
   }, 
   {
    "allow_bulk_edit": 0, 
@@ -233,7 +239,8 @@
    "reqd": 0, 
    "search_index": 0, 
    "set_only_once": 0, 
-   "unique": 0
+   "unique": 0,
+   "translatable": 0
   }, 
   {
    "allow_bulk_edit": 0, 
@@ -266,7 +273,8 @@
    "search_index": 0, 
    "set_only_once": 0, 
    "unique": 0, 
-   "width": "50px"
+   "width": "50px",
+   "translatable": 0
   }, 
   {
    "allow_bulk_edit": 0, 
@@ -297,7 +305,8 @@
    "search_index": 0, 
    "set_only_once": 0, 
    "unique": 0, 
-   "width": "70px"
+   "width": "70px",
+   "translatable": 0
   }, 
   {
    "allow_bulk_edit": 0, 
@@ -327,7 +336,8 @@
    "reqd": 0, 
    "search_index": 0, 
    "set_only_once": 0, 
-   "unique": 0
+   "unique": 0,
+   "translatable": 0
   }, 
   {
    "allow_bulk_edit": 0, 
@@ -358,7 +368,8 @@
    "reqd": 0, 
    "search_index": 0, 
    "set_only_once": 0, 
-   "unique": 0
+   "unique": 0,
+   "translatable": 0
   }, 
   {
    "allow_bulk_edit": 0, 
@@ -388,7 +399,41 @@
    "reqd": 0, 
    "search_index": 0, 
    "set_only_once": 0, 
-   "unique": 0
+   "unique": 0,
+   "translatable": 0
+  }, 
+  {
+   "allow_bulk_edit": 0, 
+   "allow_on_submit": 0, 
+   "bold": 0, 
+   "collapsible": 0, 
+   "columns": 0, 
+   "default": "0", 
+   "depends_on": "eval:['Data', 'Select', 'Text', 'Small Text', 'Text Editor'].includes(doc.fieldtype)", 
+   "fieldname": "translatable", 
+   "fieldtype": "Check", 
+   "hidden": 0, 
+   "ignore_user_permissions": 0, 
+   "ignore_xss_filter": 0, 
+   "in_filter": 0, 
+   "in_global_search": 0, 
+   "in_list_view": 0, 
+   "in_standard_filter": 0, 
+   "label": "Translatable", 
+   "length": 0, 
+   "no_copy": 0, 
+   "permlevel": 0, 
+   "precision": "", 
+   "print_hide": 0, 
+   "print_hide_if_no_value": 0, 
+   "read_only": 0, 
+   "remember_last_selected_value": 0, 
+   "report_hide": 0, 
+   "reqd": 0, 
+   "search_index": 0, 
+   "set_only_once": 0, 
+   "unique": 0,
+   "translatable": 0
   }, 
   {
    "allow_bulk_edit": 0, 
@@ -419,7 +464,8 @@
    "reqd": 0, 
    "search_index": 0, 
    "set_only_once": 0, 
-   "unique": 0
+   "unique": 0,
+   "translatable": 0
   }, 
   {
    "allow_bulk_edit": 0, 
@@ -450,7 +496,8 @@
    "reqd": 0, 
    "search_index": 0, 
    "set_only_once": 0, 
-   "unique": 0
+   "unique": 0,
+   "translatable": 0
   }, 
   {
    "allow_bulk_edit": 0, 
@@ -478,7 +525,8 @@
    "reqd": 0, 
    "search_index": 0, 
    "set_only_once": 0, 
-   "unique": 0
+   "unique": 0,
+   "translatable": 0
   }, 
   {
    "allow_bulk_edit": 0, 
@@ -510,7 +558,8 @@
    "reqd": 0, 
    "search_index": 0, 
    "set_only_once": 0, 
-   "unique": 0
+   "unique": 0,
+   "translatable": 0
   }, 
   {
    "allow_bulk_edit": 0, 
@@ -541,7 +590,8 @@
    "reqd": 0, 
    "search_index": 0, 
    "set_only_once": 0, 
-   "unique": 0
+   "unique": 0,
+   "translatable": 0
   }, 
   {
    "allow_bulk_edit": 0, 
@@ -570,7 +620,8 @@
    "reqd": 0, 
    "search_index": 0, 
    "set_only_once": 0, 
-   "unique": 0
+   "unique": 0,
+   "translatable": 0
   }, 
   {
    "allow_bulk_edit": 0, 
@@ -601,7 +652,8 @@
    "reqd": 0, 
    "search_index": 0, 
    "set_only_once": 0, 
-   "unique": 0
+   "unique": 0,
+   "translatable": 0
   }, 
   {
    "allow_bulk_edit": 0, 
@@ -634,7 +686,8 @@
    "search_index": 0, 
    "set_only_once": 0, 
    "unique": 0, 
-   "width": "50px"
+   "width": "50px",
+   "translatable": 0
   }, 
   {
    "allow_bulk_edit": 0, 
@@ -665,7 +718,8 @@
    "search_index": 0, 
    "set_only_once": 0, 
    "unique": 0, 
-   "width": "50px"
+   "width": "50px",
+   "translatable": 0
   }, 
   {
    "allow_bulk_edit": 0, 
@@ -695,7 +749,8 @@
    "reqd": 0, 
    "search_index": 0, 
    "set_only_once": 0, 
-   "unique": 0
+   "unique": 0,
+   "translatable": 0
   }, 
   {
    "allow_bulk_edit": 0, 
@@ -725,7 +780,8 @@
    "reqd": 0, 
    "search_index": 0, 
    "set_only_once": 0, 
-   "unique": 0
+   "unique": 0,
+   "translatable": 0
   }, 
   {
    "allow_bulk_edit": 0, 
@@ -756,7 +812,8 @@
    "reqd": 0, 
    "search_index": 0, 
    "set_only_once": 0, 
-   "unique": 0
+   "unique": 0,
+   "translatable": 0
   }, 
   {
    "allow_bulk_edit": 0, 
@@ -784,7 +841,8 @@
    "reqd": 0, 
    "search_index": 0, 
    "set_only_once": 0, 
-   "unique": 0
+   "unique": 0,
+   "translatable": 0
   }, 
   {
    "allow_bulk_edit": 0, 
@@ -818,7 +876,8 @@
    "search_index": 0, 
    "set_only_once": 0, 
    "unique": 0, 
-   "width": "50px"
+   "width": "50px",
+   "translatable": 0
   }, 
   {
    "allow_bulk_edit": 0, 
@@ -848,7 +907,8 @@
    "reqd": 0, 
    "search_index": 0, 
    "set_only_once": 0, 
-   "unique": 0
+   "unique": 0,
+   "translatable": 0
   }, 
   {
    "allow_bulk_edit": 0, 
@@ -882,7 +942,8 @@
    "search_index": 0, 
    "set_only_once": 0, 
    "unique": 0, 
-   "width": "50px"
+   "width": "50px",
+   "translatable": 0
   }, 
   {
    "allow_bulk_edit": 0, 
@@ -915,7 +976,8 @@
    "search_index": 0, 
    "set_only_once": 0, 
    "unique": 0, 
-   "width": "50px"
+   "width": "50px",
+   "translatable": 0
   }, 
   {
    "allow_bulk_edit": 0, 
@@ -946,7 +1008,8 @@
    "reqd": 0, 
    "search_index": 0, 
    "set_only_once": 0, 
-   "unique": 0
+   "unique": 0,
+   "translatable": 0
   }, 
   {
    "allow_bulk_edit": 0, 
@@ -977,7 +1040,8 @@
    "reqd": 0, 
    "search_index": 0, 
    "set_only_once": 0, 
-   "unique": 0
+   "unique": 0,
+   "translatable": 0
   }, 
   {
    "allow_bulk_edit": 0, 
@@ -1006,7 +1070,8 @@
    "reqd": 0, 
    "search_index": 0, 
    "set_only_once": 0, 
-   "unique": 0
+   "unique": 0,
+   "translatable": 0
   }, 
   {
    "allow_bulk_edit": 0, 
@@ -1039,7 +1104,8 @@
    "search_index": 0, 
    "set_only_once": 0, 
    "unique": 0, 
-   "width": "50px"
+   "width": "50px",
+   "translatable": 0
   }, 
   {
    "allow_bulk_edit": 0, 
@@ -1072,7 +1138,8 @@
    "search_index": 0, 
    "set_only_once": 0, 
    "unique": 0, 
-   "width": "50px"
+   "width": "50px",
+   "translatable": 0
   }, 
   {
    "allow_bulk_edit": 0, 
@@ -1105,7 +1172,8 @@
    "search_index": 0, 
    "set_only_once": 0, 
    "unique": 0, 
-   "width": "50px"
+   "width": "50px",
+   "translatable": 0
   }, 
   {
    "allow_bulk_edit": 0, 
@@ -1136,7 +1204,8 @@
    "reqd": 0, 
    "search_index": 0, 
    "set_only_once": 0, 
-   "unique": 0
+   "unique": 0,
+   "translatable": 0
   }, 
   {
    "allow_bulk_edit": 0, 
@@ -1165,7 +1234,8 @@
    "reqd": 0, 
    "search_index": 0, 
    "set_only_once": 0, 
-   "unique": 0
+   "unique": 0,
+   "translatable": 0
   }, 
   {
    "allow_bulk_edit": 0, 
@@ -1198,7 +1268,8 @@
    "search_index": 0, 
    "set_only_once": 0, 
    "unique": 0, 
-   "width": "50px"
+   "width": "50px",
+   "translatable": 0
   }, 
   {
    "allow_bulk_edit": 0, 
@@ -1230,7 +1301,8 @@
    "reqd": 0, 
    "search_index": 0, 
    "set_only_once": 0, 
-   "unique": 0
+   "unique": 0,
+   "translatable": 0
   }, 
   {
    "allow_bulk_edit": 0, 
@@ -1258,7 +1330,8 @@
    "reqd": 0, 
    "search_index": 0, 
    "set_only_once": 0, 
-   "unique": 0
+   "unique": 0,
+   "translatable": 0
   }, 
   {
    "allow_bulk_edit": 0, 
@@ -1291,7 +1364,8 @@
    "search_index": 0, 
    "set_only_once": 0, 
    "unique": 0, 
-   "width": "300px"
+   "width": "300px",
+   "translatable": 0
   }, 
   {
    "allow_bulk_edit": 0, 
@@ -1321,7 +1395,8 @@
    "reqd": 0, 
    "search_index": 0, 
    "set_only_once": 0, 
-   "unique": 0
+   "unique": 0,
+   "translatable": 0
   }, 
   {
    "allow_bulk_edit": 0, 
@@ -1351,7 +1426,8 @@
    "reqd": 0, 
    "search_index": 0, 
    "set_only_once": 0, 
-   "unique": 0
+   "unique": 0,
+   "translatable": 0
   }
  ], 
  "has_web_view": 0, 
@@ -1364,7 +1440,7 @@
  "issingle": 0, 
  "istable": 1, 
  "max_attachments": 0, 
- "modified": "2017-08-29 15:30:55.489568", 
+ "modified": "2018-02-20 21:28:41.909830", 
  "modified_by": "Administrator", 
  "module": "Core", 
  "name": "DocField", 

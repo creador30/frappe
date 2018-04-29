@@ -37,7 +37,7 @@ def get_bootinfo():
 
 	if frappe.session['user'] != 'Guest':
 		bootinfo.user_info = get_fullnames()
-		bootinfo.sid = frappe.session['sid'];
+		bootinfo.sid = frappe.session['sid']
 
 	bootinfo.modules = {}
 	bootinfo.module_list = []
@@ -78,14 +78,16 @@ def get_bootinfo():
 	bootinfo.lang_dict = get_lang_dict()
 	bootinfo.feedback_triggers = get_enabled_feedback_trigger()
 	bootinfo.gsuite_enabled = get_gsuite_status()
+	bootinfo.success_action = get_success_action()
 	bootinfo.update(get_email_accounts(user=frappe.session.user))
 
 	return bootinfo
 
 def get_letter_heads():
 	letter_heads = {}
-	for letter_head in frappe.get_all("Letter Head", fields = ["name", "content"]):
-		letter_heads.setdefault(letter_head.name, {'header': letter_head.content, 'footer': letter_head.footer})
+	for letter_head in frappe.get_all("Letter Head", fields = ["name", "content", "footer"]):
+		letter_heads.setdefault(letter_head.name,
+			{'header': letter_head.content, 'footer': letter_head.footer})
 
 	return letter_heads
 
@@ -100,12 +102,12 @@ def load_desktop_icons(bootinfo):
 	bootinfo.desktop_icons = get_desktop_icons()
 
 def get_allowed_pages():
-	return get_user_page_or_report('Page')
+	return get_user_pages_or_reports('Page')
 
 def get_allowed_reports():
-	return get_user_page_or_report('Report')
+	return get_user_pages_or_reports('Report')
 
-def get_user_page_or_report(parent):
+def get_user_pages_or_reports(parent):
 	roles = frappe.get_roles()
 	has_role = {}
 	column = get_column(parent)
@@ -138,8 +140,10 @@ def get_user_page_or_report(parent):
 			and tab{parent}.name not in (
 				select `tabCustom Role`.{field} from `tabCustom Role`
 				where `tabCustom Role`.{field} is not null)
-		""".format(parent=parent, column=column,
-			roles = ', '.join(['%s']*len(roles)), field=parent.lower()), roles, as_dict=True)
+			{condition}
+		""".format(parent=parent, column=column, roles = ', '.join(['%s']*len(roles)),
+			field=parent.lower(), condition="and tabReport.disabled=0" if parent == "Report" else ""),
+			roles, as_dict=True)
 
 	for p in standard_roles:
 		if p.name not in has_role:
@@ -250,3 +254,6 @@ def get_unseen_notes():
 
 def get_gsuite_status():
 	return (frappe.get_value('Gsuite Settings', None, 'enable') == '1')
+
+def get_success_action():
+	return frappe.get_all("Success Action", fields=["*"])

@@ -42,6 +42,7 @@ class User(Document):
 
 	def before_insert(self):
 		self.flags.in_insert = True
+		throttle_user_creation()
 
 	def validate(self):
 		self.check_demo()
@@ -66,12 +67,24 @@ class User(Document):
 		self.remove_disabled_roles()
 		self.validate_user_email_inbox()
 		ask_pass_update()
+		self.validate_roles()
+		self.validate_user_image()
 
 		if self.language == "Loading...":
 			self.language = None
 
-		if (self.name not in ["Administrator", "Guest"]) and (not self.frappe_userid):
-			self.frappe_userid = frappe.generate_hash(length=39)
+		if (self.name not in ["Administrator", "Guest"]) and (not self.get_social_login_userid("frappe")):
+			self.set_social_login_userid("frappe", frappe.generate_hash(length=39))
+
+	def validate_roles(self):
+		if self.role_profile_name:
+				role_profile = frappe.get_doc('Role Profile', self.role_profile_name)
+				self.set('roles', [])
+				self.append_roles(*[role.role for role in role_profile.roles])
+
+	def validate_user_image(self):
+		if self.user_image and len(self.user_image) > 2000:
+			frappe.throw(_("Not a valid User Image."))
 
 	def on_update(self):
 		# clear new password
@@ -82,6 +95,7 @@ class User(Document):
 		self.send_password_notification(self.__new_password)
 		if self.name not in ('Administrator', 'Guest') and not self.user_image:
 			frappe.enqueue('frappe.core.doctype.user.user.update_gravatar', name=self.name)
+
 
 	def has_website_permission(self, ptype, verbose=False):
 		"""Returns true if current user is the session user"""
@@ -136,7 +150,7 @@ class User(Document):
 
 	def email_new_password(self, new_password=None):
 		if new_password and not self.flags.in_insert:
-			_update_password(self.name, new_password)
+			_update_password(user=self.name, pwd=new_password, logout_all_sessions=self.logout_all_sessions)
 
 			if self.send_password_update_notification:
 				self.password_update_mail(new_password)
@@ -182,7 +196,8 @@ class User(Document):
 				if self.name not in STANDARD_USERS:
 					if new_password:
 						# new password given, no email required
-						_update_password(self.name, new_password)
+						_update_password(user=self.name, pwd=new_password,
+							logout_all_sessions=self.logout_all_sessions)
 
 					if not self.flags.no_welcome_mail and self.send_welcome_email:
 						self.send_welcome_mail_to_user()
@@ -481,6 +496,25 @@ class User(Document):
 		if len(email_accounts) != len(set(email_accounts)):
 			frappe.throw(_("Email Account added multiple times"))
 
+	def get_social_login_userid(self, provider):
+		try:
+			for p in self.social_logins:
+				if p.provider == provider:
+					return p.userid
+		except:
+			return None
+
+	def set_social_login_userid(self, provider, userid, username=None):
+		social_logins = {
+			"provider": provider,
+			"userid": userid
+		}
+
+		if username:
+			social_logins["username"] = username
+
+		self.append("social_logins", social_logins)
+
 @frappe.whitelist()
 def get_timezones():
 	import pytz
@@ -515,7 +549,7 @@ def get_perm_info(role):
 	return get_all_perms(role)
 
 @frappe.whitelist(allow_guest=True)
-def update_password(new_password, key=None, old_password=None):
+def update_password(new_password, logout_all_sessions=0, key=None, old_password=None):
 	result = test_password_strength(new_password, key, old_password)
 	feedback = result.get("feedback", None)
 
@@ -528,7 +562,7 @@ def update_password(new_password, key=None, old_password=None):
 	else:
 		user = res['user']
 
-	_update_password(user, new_password)
+	_update_password(user, new_password, logout_all_sessions=int(logout_all_sessions))
 
 	user_doc, redirect_url = reset_user_data(user)
 
@@ -537,7 +571,6 @@ def update_password(new_password, key=None, old_password=None):
 	if redirect_to:
 		redirect_url = redirect_to
 		frappe.cache().hdel('redirect_after_login', user)
-
 
 	frappe.local.login_manager.login_as(user)
 
@@ -768,6 +801,8 @@ def reset_password(user):
 
 	try:
 		user = frappe.get_doc("User", user)
+		if not user.enabled:
+			return 'disabled'
 		user.validate_reset_password()
 		user.reset_password(send_email=True)
 
@@ -929,7 +964,7 @@ def send_token_via_sms(tmp_id,phone_no=None,user=None):
 			return False
 
 	args[ss.receiver_parameter] = usr_phone
-	status = send_request(ss.sms_gateway_url, args)
+	status = send_request(ss.sms_gateway_url, args, use_post=ss.use_post)
 
 	if 200 <= status < 300:
 		frappe.cache().delete(tmp_id + '_token')
@@ -977,3 +1012,24 @@ def reset_otp_secret(user):
 		return frappe.msgprint(_("OTP Secret has been reset. Re-registration will be required on next login."))
 	else:
 		return frappe.throw(_("OTP secret can only be reset by the Administrator."))
+
+def throttle_user_creation():
+	if frappe.flags.in_import:
+		return
+
+	if frappe.db.get_creation_count('User', 60) > frappe.local.conf.get("throttle_user_limit", 60):
+		frappe.throw(_('Throttled'))
+
+@frappe.whitelist()
+def get_role_profile(role_profile):
+	roles = frappe.get_doc('Role Profile', {'role_profile': role_profile})
+	return roles.roles
+
+def update_roles(role_profile):
+	users = frappe.get_all('User', filters={'role_profile_name': role_profile})
+	role_profile = frappe.get_doc('Role Profile', role_profile)
+	roles = [role.role for role in role_profile.roles]
+	for d in users:
+		user = frappe.get_doc('User', d)
+		user.set('roles', [])
+		user.add_roles(*roles)

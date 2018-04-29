@@ -114,7 +114,7 @@ frappe.setup.UserProgressDialog  = class UserProgressDialog {
 				$footer.find('.text-right')
 					.prepend($(`<a class="done-btn btn btn-default btn-sm">
 					${__("Mark as Done")}</a>`))
-					.prepend($(`<a class="make-btn btn btn-primary btn-sm primary action">
+					.append($(`<a class="make-btn btn btn-primary btn-sm primary action">
 					${__("Create")}</a>`));
 			},
 			on_update: (completed, total) => {
@@ -159,7 +159,6 @@ frappe.setup.UserProgressDialog  = class UserProgressDialog {
 		frappe.call({
 			method: "frappe.desk.user_progress.update_and_get_user_progress",
 			callback: function(r) {
-				// console.log("states", r.message);
 				let states = r.message;
 				let changed = 0;
 				let completed = 0;

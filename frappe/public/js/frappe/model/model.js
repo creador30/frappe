@@ -27,6 +27,8 @@ $.extend(frappe.model, {
 		{fieldname:'docstatus', fieldtype:'Int', label:__('Document Status')},
 	],
 
+	numeric_fieldtypes: ["Int", "Float", "Currency", "Percent"],
+
 	std_fields_table: [
 		{fieldname:'parent', fieldtype:'Data', label:__('Parent')},
 	],
@@ -39,8 +41,9 @@ $.extend(frappe.model, {
 		// setup refresh if the document is updated somewhere else
 		frappe.realtime.on("doc_update", function(data) {
 			// set list dirty
-			frappe.views.set_list_as_dirty(data.doctype);
+			frappe.views.ListView.trigger_list_update(data);
 			var doc = locals[data.doctype] && locals[data.doctype][data.name];
+
 			if(doc) {
 				// current document is dirty, show message if its not me
 				if(frappe.get_route()[0]==="Form" && cur_frm.doc.doctype===doc.doctype && cur_frm.doc.name===doc.name) {
@@ -61,14 +64,21 @@ $.extend(frappe.model, {
 		});
 
 		frappe.realtime.on("list_update", function(data) {
-			frappe.views.set_list_as_dirty(data.doctype);
+			frappe.views.ListView.trigger_list_update(data);
 		});
 
 	},
 
 	is_value_type: function(fieldtype) {
+		if (typeof fieldtype == 'object') {
+			fieldtype = fieldtype.fieldtype;
+		}
 		// not in no-value type
 		return frappe.model.no_value_type.indexOf(fieldtype)===-1;
+	},
+
+	is_non_std_field: function(fieldname) {
+		return !frappe.model.std_fields_list.includes(fieldname);
 	},
 
 	get_std_field: function(fieldname) {
@@ -144,21 +154,27 @@ $.extend(frappe.model, {
 	},
 
 	with_doc: function(doctype, name, callback) {
-		if(!name) name = doctype; // single type
-		if(locals[doctype] && locals[doctype][name] && frappe.model.get_docinfo(doctype, name)) {
-			callback(name);
-		} else {
-			return frappe.call({
-				method: 'frappe.desk.form.load.getdoc',
-				type: "GET",
-				args: {
-					doctype: doctype,
-					name: name
-				},
-				freeze: true,
-				callback: function(r) { callback(name, r); }
-			});
-		}
+		return new Promise(resolve => {
+			if(!name) name = doctype; // single type
+			if(locals[doctype] && locals[doctype][name] && frappe.model.get_docinfo(doctype, name)) {
+				callback && callback(name);
+				resolve(frappe.get_doc(doctype, name));
+			} else {
+				return frappe.call({
+					method: 'frappe.desk.form.load.getdoc',
+					type: "GET",
+					args: {
+						doctype: doctype,
+						name: name
+					},
+					freeze: true,
+					callback: function(r) {
+						callback && callback(name, r);
+						resolve(frappe.get_doc(doctype, name));
+					}
+				});
+			}
+		});
 	},
 
 	get_docinfo: function(doctype, name) {
@@ -327,17 +343,23 @@ $.extend(frappe.model, {
 	set_value: function(doctype, docname, fieldname, value, fieldtype) {
 		/* help: Set a value locally (if changed) and execute triggers */
 
-		var doc = locals[doctype] && locals[doctype][docname];
+		var doc;
+		if ($.isPlainObject(doctype)) {
+			// first parameter is the doc, shift parameters to the left
+			doc = doctype; fieldname = docname; value = fieldname;
+		} else {
+			doc = locals[doctype] && locals[doctype][docname];
+		}
 
-		var to_update = fieldname;
+		let to_update = fieldname;
 		let tasks = [];
 		if(!$.isPlainObject(to_update)) {
 			to_update = {};
 			to_update[fieldname] = value;
 		}
 
-		$.each(to_update, function(key, value) {
-			if(doc && doc[key] !== value) {
+		$.each(to_update, (key, value) => {
+			if (doc && doc[key] !== value) {
 				if(doc.__unedited && !(!doc[key] && !value)) {
 					// unset unedited flag for virgin rows
 					doc.__unedited = false;
@@ -567,6 +589,19 @@ $.extend(frappe.model, {
 		}
 		return all;
 	},
+
+	get_full_column_name: function(fieldname, doctype) {
+		if (fieldname.includes('`tab')) return fieldname;
+		return '`tab' + doctype + '`.`' + fieldname + '`';
+	},
+
+	is_numeric_field: function(fieldtype) {
+		if (!fieldtype) return;
+		if (typeof fieldtype === 'object') {
+			fieldtype = fieldtype.fieldtype;
+		}
+		return frappe.model.numeric_fieldtypes.includes(fieldtype);
+	}
 });
 
 // legacy

@@ -8,7 +8,9 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.core.doctype.dynamic_link.dynamic_link import deduplicate_dynamic_links
 from six import iteritems
+from past.builtins import cmp
 
+import functools
 
 class Contact(Document):
 	def autoname(self):
@@ -46,6 +48,11 @@ class Contact(Document):
 
 		return None
 
+	def has_link(self, doctype, name):
+		for link in self.links:
+			if link.link_doctype==doctype and link.link_name== name:
+				return True
+
 	def has_common_link(self, doc):
 		reference_links = [(link.link_doctype, link.link_name) for link in doc.links]
 		for link in self.links:
@@ -66,7 +73,7 @@ def get_default_contact(doctype, name):
 			dl.parenttype = "Contact"''', (doctype, name))
 
 	if out:
-		return sorted(out, lambda x,y: cmp(y[1], x[1]))[0][0]
+		return sorted(out, key = functools.cmp_to_key(lambda x,y: cmp(y[1], x[1])))[0][0]
 	else:
 		return None
 

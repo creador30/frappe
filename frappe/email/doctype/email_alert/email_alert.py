@@ -13,6 +13,10 @@ from frappe.modules.utils import export_module_json, get_doc_module
 from markdown2 import markdown
 from six import string_types
 
+# imports - third-party imports
+import pymysql
+from pymysql.constants import ER
+
 class EmailAlert(Document):
 	def onload(self):
 		'''load message'''
@@ -117,10 +121,13 @@ def get_context(context):
 					please enable Allow Print For {0} in Print Settings""".format(status)),
 					title=_("Error in Email Alert"))
 			else:
-				return [frappe.attach_print(doc.doctype, doc.name)]
+				return [{"print_format_attachment":1, "doctype":doc.doctype, "name": doc.name,
+					"print_format":self.print_format, "print_letterhead": print_settings.with_letterhead}]
 
 		context = get_context(doc)
 		recipients = []
+
+		context = {"doc": doc, "alert": self, "comments": None}
 
 		for recipient in self.recipients:
 			if recipient.condition:
@@ -133,6 +140,9 @@ def get_context(context):
 
 				# else:
 				# 	print "invalid email"
+			if recipient.cc and "{" in recipient.cc:
+				recipient.cc = frappe.render_template(recipient.cc, context)
+
 			if recipient.cc:
 				recipient.cc = recipient.cc.replace(",", "\n")
 				recipients = recipients + recipient.cc.split("\n")
@@ -150,8 +160,6 @@ def get_context(context):
 		recipients = list(set(recipients))
 		subject = self.subject
 
-		context = {"doc": doc, "alert": self, "comments": None}
-
 		if self.is_standard:
 			self.load_standard_properties(context)
 
@@ -167,7 +175,9 @@ def get_context(context):
 			message= frappe.render_template(self.message, context),
 			reference_doctype = doc.doctype,
 			reference_name = doc.name,
-			attachments = attachments)
+			attachments = attachments,
+			print_letterhead = ((attachments
+				and attachments[0].get('print_letterhead')) or False))
 
 		if self.set_property_after_alert:
 			frappe.db.set_value(doc.doctype, doc.name, self.set_property_after_alert,
@@ -237,8 +247,8 @@ def evaluate_alert(doc, alert, event):
 		if event=="Value Change" and not doc.is_new():
 			try:
 				db_value = frappe.db.get_value(doc.doctype, doc.name, alert.value_changed)
-			except frappe.DatabaseOperationalError as e:
-				if e.args[0]==1054:
+			except pymysql.InternalError as e:
+				if e.args[0]== ER.BAD_FIELD_ERROR:
 					alert.db_set('enabled', 0)
 					frappe.log_error('Email Alert {0} has been disabled due to missing field'.format(alert.name))
 					return
@@ -258,7 +268,7 @@ def evaluate_alert(doc, alert, event):
 	except TemplateError:
 		frappe.throw(_("Error while evaluating Email Alert {0}. Please fix your template.").format(alert))
 	except Exception as e:
-		frappe.log_error(message=frappe.get_traceback(), title=e)
+		frappe.log_error(message=frappe.get_traceback(), title=str(e))
 		frappe.throw(_("Error in Email Alert"))
 
 def get_context(doc):

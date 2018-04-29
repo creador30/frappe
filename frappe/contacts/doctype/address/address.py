@@ -14,6 +14,9 @@ from frappe.utils.user import is_website_user
 from frappe.model.naming import make_autoname
 from frappe.core.doctype.dynamic_link.dynamic_link import deduplicate_dynamic_links
 from six import iteritems, string_types
+from past.builtins import cmp
+
+import functools
 
 
 class Address(Document):
@@ -90,7 +93,7 @@ def get_default_address(doctype, name, sort_key='is_primary_address'):
 		'''.format(sort_key), (doctype, name))
 
 	if out:
-		return sorted(out, lambda x,y: cmp(y[1], x[1]))[0][0]
+		return sorted(out, key = functools.cmp_to_key(lambda x,y: cmp(y[1], x[1])))[0][0]
 	else:
 		return None
 
@@ -192,13 +195,17 @@ def get_address_templates(address):
 		return result
 
 @frappe.whitelist()
-def get_shipping_address(company):
+def get_shipping_address(company, address = None):
 	filters = [
 		["Dynamic Link", "link_doctype", "=", "Company"],
 		["Dynamic Link", "link_name", "=", company],
 		["Address", "is_your_company_address", "=", 1]
 	]
 	fields = ["name", "address_line1", "address_line2", "city", "state", "country"]
+	if address and frappe.db.get_value('Dynamic Link',
+		{'parent': address, 'link_name': company}):
+		filters.append(["Address", "name", "=", address])
+
 	address = frappe.get_all("Address", filters=filters, fields=fields) or {}
 
 	if address:

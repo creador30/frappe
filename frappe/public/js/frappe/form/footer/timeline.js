@@ -51,6 +51,10 @@ frappe.ui.form.Timeline = Class.extend({
 							var communications = me.get_communications().concat(new_communications);
 							frappe.model.set_docinfo(me.frm.doc.doctype, me.frm.doc.name, "communications", communications);
 
+							if (new_communications.length < 20) {
+								me.more = false;
+							}
+
 						} else {
 							me.more = false;
 						}
@@ -329,7 +333,8 @@ frappe.ui.form.Timeline = Class.extend({
 		if(c.subject && c.communication_type==="Communication") {
 			if(this.frm.doc.subject && !this.frm.doc.subject.includes(c.subject)) {
 				c.show_subject = true;
-			} else if(this.frm.meta.title_field && !!this.frm.doc[this.frm.meta.title_field].includes(c.subject)) {
+			} else if(this.frm.meta.title_field && this.frm.doc[this.frm.meta.title_field]
+				&& !!this.frm.doc[this.frm.meta.title_field].includes(c.subject)) {
 				c.show_subject = true;
 			} else if(!this.frm.doc.name.includes(c.subject)) {
 				c.show_subject = true;
@@ -472,8 +477,8 @@ frappe.ui.form.Timeline = Class.extend({
 								parts.push(__('{0} from {1} to {2} in row #{3}', [
 									frappe.meta.get_label(me.frm.fields_dict[row[0]].grid.doctype,
 										p[0]),
-									(frappe.ellipsis(p[1], 40) || '""').bold(),
 									(frappe.ellipsis(p[2], 40) || '""').bold(),
+									(frappe.ellipsis(p[1], 40) || '""').bold(),
 									row[1]
 								]));
 							}
@@ -607,15 +612,10 @@ frappe.ui.form.Timeline = Class.extend({
 	 */
 	update_comment: function(name, content)
 	{
-		// TODO: is there a frappe.client.update function?
 		return frappe.call({
-			method: 'frappe.client.set_value',
-			args: {
-				doctype: 'Communication',
-				name: name,
-				fieldname: 'content',
-				value: content,
-			}, callback: function(r) {
+			method: 'frappe.desk.form.utils.update_comment',
+			args: { name, content },
+			callback: function(r) {
 				if(!r.exc) {
 					frappe.utils.play_sound('click');
 				}

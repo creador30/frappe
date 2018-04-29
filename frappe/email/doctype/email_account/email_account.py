@@ -273,7 +273,6 @@ class EmailAccount(Document):
 						"uid_reindexed": uid_reindexed
 					}
 					communication = self.insert_communication(msg, args=args)
-					#self.notify_update()
 
 				except SentEmailInInbox:
 					frappe.db.rollback()
@@ -458,8 +457,8 @@ class EmailAccount(Document):
 				# try and match by subject and sender
 				# if sent by same sender with same subject,
 				# append it to old coversation
-				subject = frappe.as_unicode(strip(re.sub("(^\s*(Fw|FW|fwd)[^:]*:|\s*(Re|RE)[^:]*:\s*)*",
-					"", email.subject)))
+				subject = frappe.as_unicode(strip(re.sub("(^\s*(fw|fwd|wg)[^:]*:|\s*(re|aw)[^:]*:\s*)*",
+					"", email.subject, 0, flags=re.IGNORECASE)))
 
 				parent = frappe.db.get_all(self.append_to, filters={
 					self.sender_field: email.from_email,
@@ -492,6 +491,9 @@ class EmailAccount(Document):
 
 		if self.sender_field:
 			parent.set(self.sender_field, frappe.as_unicode(email.from_email))
+
+		if parent.meta.has_field("email_account"):
+			parent.email_account = self.name
 
 		parent.flags.ignore_mandatory = True
 
@@ -598,7 +600,7 @@ class EmailAccount(Document):
 
 		flags = frappe.db.sql("""select name, communication, uid, action from
 			`tabEmail Flag Queue` where is_completed=0 and email_account='{email_account}'
-			""".format(email_account=self.name), as_dict=True)
+			""".format(email_account=frappe.db.escape(self.name)), as_dict=True)
 
 		uid_list = { flag.get("uid", None): flag.get("action", "Read") for flag in flags }
 		if flags and uid_list:
@@ -715,10 +717,10 @@ def get_max_email_uid(email_account):
 		"communication_medium": "Email",
 		"sent_or_received": "Received",
 		"email_account": email_account
-	}, fields=["ifnull(max(uid), 0) as uid"])
+	}, fields=["max(uid) as uid"])
 
 	if not result:
 		return 1
 	else:
-		max_uid = int(result[0].get("uid", 0)) + 1
+		max_uid = cint(result[0].get("uid", 0)) + 1
 		return max_uid
